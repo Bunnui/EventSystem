@@ -7,23 +7,23 @@ using System.Xml.Linq;
 
 
 var sender = new Sender();
-var eventManager = new EventManager();
-eventManager.Subject<Sender, EventArgs>((s, e) => { Console.WriteLine("[EventArgs] " + e); });   // 订阅全部基于EventArgs的事件，当然他也会是基类
-eventManager.Subject<Sender, EventArgsTest1>((s, e) => { Console.WriteLine("[EventArgsTest1] " + e); });
-eventManager.Subject<Sender, EventArgsTest2>((s, e) => { Console.WriteLine("[EventArgsTest2] " + e); });
-eventManager.Subject<Sender, EventArgsTest3>((s, e) => { Console.WriteLine("[EventArgsTest3] " + e); });
+var eventManager = new EventManager<Sender>();
+eventManager.Subject<EventArgs>((s, e) => { Console.WriteLine("[EventArgs] 操作者：{0} ，事件参数：{1}", s, e); });   // 订阅全部基于EventArgs的事件
+eventManager.Subject<EventArgsTest1>((s, e) => { Console.WriteLine("[EventArgsTest1] 操作者：{0} ，事件参数：{1}", s, e); });
+eventManager.Subject<EventArgsTest2>((s, e) => { Console.WriteLine("[EventArgsTest2] 操作者：{0} ，事件参数：{1}", s, e); });
+eventManager.Subject<EventArgsTest3>((s, e) => { Console.WriteLine("[EventArgsTest3] 操作者：{0} ，事件参数：{1}", s, e); });
 eventManager.Publish(sender, new EventArgsTest1());
 eventManager.Publish(sender, new EventArgsTest2());
 eventManager.Publish(sender, new EventArgsTest3());
 Console.ReadLine();
 // 运行结果
-// [EventArgsTest1] 这是 EventArgsTest1 事件
-// [EventArgs] 这是 EventArgsTest1 事件
-// [EventArgsTest2] 这是 EventArgsTest2 事件
-// [EventArgs] 这是 EventArgsTest2 事件
-// [EventArgsTest2] 这是 EventArgsTest3 事件
-// [EventArgsTest3] 这是 EventArgsTest3 事件
-// [EventArgs] 这是 EventArgsTest3 事件
+// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
+// [EventArgsTest1] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
+// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
+// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
+// [EventArgsTest3] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
+// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
+// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
 
 
 public class Sender
@@ -83,7 +83,7 @@ public delegate void EventHandler<TSender, TArgs>(TSender sender, TArgs args) wh
 /// <summary>
 /// 事件管理器
 /// </summary>
-public sealed class EventManager
+public sealed class EventManager<TSender>
 {
     /// <summary>
     /// 订阅列表锁
@@ -100,7 +100,7 @@ public sealed class EventManager
     /// </summary>
     /// <typeparam name="TKonataEventArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void Subject<TSender, TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
+    public void Subject<TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -123,7 +123,7 @@ public sealed class EventManager
     /// </summary>
     /// <typeparam name="TKonataEventArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void UnSubject<TSender, TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
+    public void UnSubject<TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -148,7 +148,7 @@ public sealed class EventManager
     /// </summary>
     /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="args">发布的事件参数对象</param>
-    public void Publish<TSender, TArgs>(TSender sender, TArgs args) where TArgs : EventArgs
+    public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : EventArgs
     {
         Task.Factory.StartNew(() =>
         {
