@@ -16,6 +16,7 @@ eventManager.Publish(sender, new EventArgsTest1());
 eventManager.Publish(sender, new EventArgsTest2());
 eventManager.Publish(sender, new EventArgsTest3());
 Console.ReadLine();
+
 // 运行结果
 // [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
 // [EventArgsTest3] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
@@ -194,7 +195,7 @@ public sealed class EventManager<TSender, TEventArgs> where TEventArgs : EventAr
     }
 
     /// <summary>
-    /// Konata 事件订阅信息
+    /// 事件订阅信息
     /// </summary>
     private sealed class EventSubjectsInfo
     {
