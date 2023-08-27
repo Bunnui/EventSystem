@@ -14,11 +14,6 @@ namespace EventSystem;
 public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEventArgs>, IEventPublisher<TSender, TEventArgs>
 {
     /// <summary>
-    /// 订阅列表锁
-    /// </summary>
-    private readonly object _lock = new();
-
-    /// <summary>
     /// 订阅列表
     /// </summary>
     private readonly List<EventSubjectsInfo> _subjects = new();
@@ -30,7 +25,7 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     /// <param name="handler">事件处理程序</param>
     public void Subject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
-        lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
+        lock (this)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
             foreach (var subject in _subjects)
             {
@@ -50,7 +45,7 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     /// <param name="handler">事件处理程序</param>
     public void UnSubject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
-        lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
+        lock (this)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
             for (int i = _subjects.Count - 1; i >= 0; i--)
             {
@@ -72,7 +67,7 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     /// <param name="args">发布的事件参数对象</param>
     public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : TEventArgs
     {
-        lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
+        lock (this)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
             //try
             //{
@@ -100,7 +95,7 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     /// <returns></returns>
     public bool IsSubscribed<TArgs>() where TArgs : TEventArgs
     {
-        lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
+        lock (this)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
             foreach (var subject in _subjects)
             {
