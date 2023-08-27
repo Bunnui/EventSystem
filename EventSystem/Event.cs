@@ -74,22 +74,22 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     {
         lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
-            try
+            //try
+            //{
+            foreach (var subject in _subjects)
             {
-                foreach (var subject in _subjects)
+                var subjectType = subject.Type;
+                var subjectHandler = subject.Handler;
+                if (subjectType.IsAssignableFrom(args?.GetType()))
                 {
-                    var subjectType = subject.Type;
-                    var subjectHandler = subject.Handler;
-                    if (subjectType.IsAssignableFrom(args?.GetType()))
-                    {
-                        subjectHandler.DynamicInvoke(sender, args);
-                    }
+                    subjectHandler.DynamicInvoke(sender, args);
                 }
             }
-            catch (Exception)
-            {
-                // 异常处理，可以弄个异常日志事件，当然也可以不进行处理，直接抛出
-            }
+            //}
+            //catch (Exception)
+            //{
+            //    // 异常处理，可以弄个异常日志事件，当然也可以不进行处理，直接抛出
+            //}
         }
     }
 
