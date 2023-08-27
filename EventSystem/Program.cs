@@ -8,8 +8,11 @@ using System.Xml.Linq;
 
 var sender = new Sender();
 var eventManager = new EventManager<Sender, EventArgs>();
-eventManager.Subject<EventArgs>((s, e) => { Console.WriteLine("[EventArgs] 操作者：{0} ，事件参数：{1}", s, e); });   // 订阅全部基于EventArgs的事件
+// 订阅全部基于 EventArgs 的事件
+eventManager.Subject<EventArgs>((s, e) => { Console.WriteLine("[EventArgs] 操作者：{0} ，事件参数：{1}", s, e); });   
 eventManager.Subject<EventArgsTest1>((s, e) => { Console.WriteLine("[EventArgsTest1] 操作者：{0} ，事件参数：{1}", s, e); });
+// 注意：订阅了 EventArgsTest2 在调用发布 EventArgsTest3 事件同样也会进行通知，因为它可以进行转换到该类型
+// 这种父类应为抽象类，这样做可以统一处理基于该抽象类的实现类
 eventManager.Subject<EventArgsTest2>((s, e) => { Console.WriteLine("[EventArgsTest2] 操作者：{0} ，事件参数：{1}", s, e); });
 eventManager.Subject<EventArgsTest3>((s, e) => { Console.WriteLine("[EventArgsTest3] 操作者：{0} ，事件参数：{1}", s, e); });
 eventManager.Publish(sender, new EventArgsTest1());
@@ -59,18 +62,6 @@ public class EventArgsTest3 : EventArgsTest2    // 注意：如果是订阅者�
     }
 }
 
-
-/// <summary>
-/// 事件参数
-/// </summary>
-public class EventArgs
-{
-    /// <summary>
-    /// 事件发送日期
-    /// </summary>
-    public DateTime EventDateTime { get; } = DateTime.Now;
-}
-
 /// <summary>
 /// 事件处理程序
 /// </summary>
@@ -78,15 +69,14 @@ public class EventArgs
 /// <typeparam name="TEventArgs">事件参数类型</typeparam>
 /// <param name="sender">发生事件的操作者</param>
 /// <param name="args">发生事件的对象</param>
-public delegate void EventHandler<TSender, TEventArgs>(TSender sender, TEventArgs args) where TEventArgs : EventArgs;
-
+public delegate void EventHandler<TSender, TEventArgs>(TSender sender, TEventArgs args);
 
 /// <summary>
 /// 事件管理器
 /// </summary>
 /// <typeparam name="TSender">事件操作者类型</typeparam>
 /// <typeparam name="TEventArgs">事件参数类型</typeparam>
-public sealed class EventManager<TSender, TEventArgs> where TEventArgs : EventArgs
+public sealed class EventManager<TSender, TEventArgs>
 {
     /// <summary>
     /// 订阅列表锁
