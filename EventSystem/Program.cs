@@ -7,7 +7,7 @@ using System.Xml.Linq;
 
 
 var sender = new Sender();
-var eventManager = new EventManager<Sender>();
+var eventManager = new EventManager<Sender, EventArgs>();
 eventManager.Subject<EventArgs>((s, e) => { Console.WriteLine("[EventArgs] 操作者：{0} ，事件参数：{1}", s, e); });   // 订阅全部基于EventArgs的事件
 eventManager.Subject<EventArgsTest1>((s, e) => { Console.WriteLine("[EventArgsTest1] 操作者：{0} ，事件参数：{1}", s, e); });
 eventManager.Subject<EventArgsTest2>((s, e) => { Console.WriteLine("[EventArgsTest2] 操作者：{0} ，事件参数：{1}", s, e); });
@@ -17,11 +17,11 @@ eventManager.Publish(sender, new EventArgsTest2());
 eventManager.Publish(sender, new EventArgsTest3());
 Console.ReadLine();
 // 运行结果
+// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
+// [EventArgsTest3] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
+// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
 // [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
 // [EventArgsTest1] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
-// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
-// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
-// [EventArgsTest3] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
 // [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
 // [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
 
@@ -74,16 +74,18 @@ public class EventArgs
 /// 事件处理程序
 /// </summary>
 /// <typeparam name="TSender">事件操作者类型</typeparam>
-/// <typeparam name="TArgs">事件参数类型</typeparam>
+/// <typeparam name="TEventArgs">事件参数类型</typeparam>
 /// <param name="sender">发生事件的操作者</param>
 /// <param name="args">发生事件的对象</param>
-public delegate void EventHandler<TSender, TArgs>(TSender sender, TArgs args) where TArgs : EventArgs;
+public delegate void EventHandler<TSender, TEventArgs>(TSender sender, TEventArgs args) where TEventArgs : EventArgs;
 
 
 /// <summary>
 /// 事件管理器
 /// </summary>
-public sealed class EventManager<TSender>
+/// <typeparam name="TSender">事件操作者类型</typeparam>
+/// <typeparam name="TEventArgs">事件参数类型</typeparam>
+public sealed class EventManager<TSender, TEventArgs> where TEventArgs : EventArgs
 {
     /// <summary>
     /// 订阅列表锁
@@ -98,9 +100,9 @@ public sealed class EventManager<TSender>
     /// <summary>
     /// 订阅事件
     /// </summary>
-    /// <typeparam name="TEventArgs">事件参数类型</typeparam>
+    /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void Subject<TEventArgs>(EventHandler<TSender, TEventArgs> handler) where TEventArgs : EventArgs
+    public void Subject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -113,7 +115,7 @@ public sealed class EventManager<TSender>
                         return;
                     }
                 }
-                _subjects.Add(new EventSubjectsInfo(typeof(TEventArgs), handler));
+                _subjects.Add(new EventSubjectsInfo(typeof(TArgs), handler));
             }
         });
     }
@@ -121,9 +123,9 @@ public sealed class EventManager<TSender>
     /// <summary>
     /// 取消订阅
     /// </summary>
-    /// <typeparam name="TEventArgs">事件参数类型</typeparam>
+    /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void UnSubject<TEventArgs>(EventHandler<TSender, TEventArgs> handler) where TEventArgs : EventArgs
+    public void UnSubject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -134,7 +136,7 @@ public sealed class EventManager<TSender>
                     var subject = _subjects[i];
                     var ctype = subject.Type;
                     var cHandler = subject.Handler;
-                    if (ctype.IsAssignableFrom(typeof(TEventArgs)) && cHandler.Equals(handler))
+                    if (ctype.IsAssignableFrom(typeof(TArgs)) && cHandler.Equals(handler))
                     {
                         _subjects.Remove(subject);
                     }
@@ -148,7 +150,7 @@ public sealed class EventManager<TSender>
     /// </summary>
     /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="args">发布的事件参数对象</param>
-    public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : EventArgs
+    public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : TEventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -179,7 +181,7 @@ public sealed class EventManager<TSender>
     /// </summary>
     /// <typeparam name="TArgs"></typeparam>
     /// <returns></returns>
-    internal bool IsSubscribed<TArgs>() where TArgs : EventArgs
+    internal bool IsSubscribed<TArgs>() where TArgs : TEventArgs
     {
         foreach (var subject in _subjects)
         {
