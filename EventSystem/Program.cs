@@ -1,215 +1,119 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Xml.Linq;
+﻿using EventSystem;
 
+var bot = new BotClient();
 
-var sender = new Sender();
-var eventManager = new EventManager<Sender, EventArgs>();
 // 订阅全部基于 EventArgs 的事件
-eventManager.Subject<EventArgs>((s, e) => { Console.WriteLine("[EventArgs] 操作者：{0} ，事件参数：{1}", s, e); });   
-eventManager.Subject<EventArgsTest1>((s, e) => { Console.WriteLine("[EventArgsTest1] 操作者：{0} ，事件参数：{1}", s, e); });
-// 注意：订阅了 EventArgsTest2 在调用发布 EventArgsTest3 事件同样也会进行通知，因为它可以进行转换到该类型
-// 这种父类应为抽象类，这样做可以统一处理基于该抽象类的实现类
-eventManager.Subject<EventArgsTest2>((s, e) => { Console.WriteLine("[EventArgsTest2] 操作者：{0} ，事件参数：{1}", s, e); });
-eventManager.Subject<EventArgsTest3>((s, e) => { Console.WriteLine("[EventArgsTest3] 操作者：{0} ，事件参数：{1}", s, e); });
-eventManager.Publish(sender, new EventArgsTest1());
-eventManager.Publish(sender, new EventArgsTest2());
-eventManager.Publish(sender, new EventArgsTest3());
+bot.MyEvent.Subject<EventArgs>((s, e) => { Console.WriteLine("[标识1] 操作者：{0} ，事件参数：{1}", s, e); });
+// 订阅程序运行程序
+bot.MyEvent.Subject<RunEvent>((s, e) => { Console.WriteLine("[标识2] 操作者：{0} ，事件参数：{1}", s, e); });
+bot.MyEvent.Subject<StopEvent>((s, e) => { Console.WriteLine("[标识3] 操作者：{0} ，事件参数：{1}", s, e); });
+// 注意：在订阅了MessageEventArgs，程序在发布FriendMessageEvent、GroupMessageEvent事件同样也会进行通知，
+// 因为它可以进行转换到该类型，这种应为抽象类比较合适，这样做可以统一处理基于该类的实现类
+bot.MyEvent.Subject<MessageEvent>((s, e) => { Console.WriteLine("[标识4] 操作者：{0} ，事件参数：{1}", s, e); });
+bot.MyEvent.Subject<FriendMessageEvent>((s, e) => { Console.WriteLine("[标识5] 操作者：{0} ，事件参数：{1}", s, e); });
+bot.MyEvent.Subject<GroupMessageEvent>((s, e) => { Console.WriteLine("[标识6] 操作者：{0} ，事件参数：{1}", s, e); });
+// 模拟运行程序
+bot.Run();
+// 模拟接收到消息
+bot.ReceiveMessages();
+// 模拟停止程序
+bot.Stop();
+// 阻塞一下，防止程序被关闭
 Console.ReadLine();
 
-// 运行结果
-// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
-// [EventArgsTest3] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
-// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest3 事件
-// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
-// [EventArgsTest1] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest1 事件
-// [EventArgs] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
-// [EventArgsTest2] 操作者：这是 Sender 操作者 ，事件参数：这是 EventArgsTest2 事件
+// 预期结果：
+// 各种事件有2个，消息事件会有3个，因为有一个是由消息父类（MessageEvent）订阅者发出
 
+// 运行结果：
+// [标识1] 操作者：EventSystem.BotClient ，事件参数：程序正在运行中！
+// [标识2] 操作者：EventSystem.BotClient ，事件参数：程序正在运行中！
+// [标识1] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
+// [标识4] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
+// [标识5] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
+// [标识1] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
+// [标识4] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
+// [标识6] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
+// [标识1] 操作者：EventSystem.BotClient ，事件参数：程序已经被关闭！
+// [标识3] 操作者：EventSystem.BotClient ，事件参数：程序已经被关闭！
 
-public class Sender
+namespace EventSystem
 {
-    public override string ToString()
+
+    public class BotClient
     {
-        return $"这是 {nameof(Sender)} 操作者";
-    }
-}
+        // 这里只举例一个，可以自行定义其他事件
 
-public class EventArgsTest1 : EventArgs
-{
-    public override string ToString()
-    {
-        return $"这是 {nameof(EventArgsTest1)} 事件";
-    }
-}
+        /// <summary>
+        /// 内部的对象，如果你不希望发布方法暴露出去，请使用接口进行暴露
+        /// </summary>
+        internal readonly Event<BotClient, EventArgs> _myEvent = new();
 
-public class EventArgsTest2 : EventArgs
-{
-    public override string ToString()
-    {
-        return $"这是 {nameof(EventArgsTest2)} 事件";
-    }
-}
+        /// <summary>
+        /// 这是面向用户的订阅事件接口
+        /// </summary>
+        public IEventSubscriber<BotClient, EventArgs> MyEvent => _myEvent;
 
-public class EventArgsTest3 : EventArgsTest2    // 注意：如果是订阅者订阅了 EventArgsTest2 在调用发布 EventArgsTest3 事件后，EventArgsTest2订阅者也会收到事件通知，因为EventArgsTest3继承了EventArgsTest2
-{
-    public override string ToString()
-    {
-        return $"这是 {nameof(EventArgsTest3)} 事件";
-    }
-}
 
-/// <summary>
-/// 事件处理程序
-/// </summary>
-/// <typeparam name="TSender">事件操作者类型</typeparam>
-/// <typeparam name="TEventArgs">事件参数类型</typeparam>
-/// <param name="sender">发生事件的操作者</param>
-/// <param name="args">发生事件的对象</param>
-public delegate void EventHandler<TSender, TEventArgs>(TSender sender, TEventArgs args);
-
-/// <summary>
-/// 事件管理器
-/// </summary>
-/// <typeparam name="TSender">事件操作者类型</typeparam>
-/// <typeparam name="TEventArgs">事件参数类型</typeparam>
-public sealed class EventManager<TSender, TEventArgs>
-{
-    /// <summary>
-    /// 订阅列表锁
-    /// </summary>
-    private readonly object _lock = new();
-
-    /// <summary>
-    /// 订阅列表
-    /// </summary>
-    private readonly List<EventSubjectsInfo> _subjects = new();
-
-    /// <summary>
-    /// 订阅事件
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="handler">事件处理程序</param>
-    public void Subject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
-    {
-        Task.Factory.StartNew(() =>
+        public void Run()
         {
-            lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
-            {
-                foreach (var subject in _subjects)
-                {
-                    if (subject.Handler.Equals(handler))
-                    {
-                        return;
-                    }
-                }
-                _subjects.Add(new EventSubjectsInfo(typeof(TArgs), handler));
-            }
-        });
-    }
-
-    /// <summary>
-    /// 取消订阅
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="handler">事件处理程序</param>
-    public void UnSubject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
-    {
-        Task.Factory.StartNew(() =>
-        {
-            lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
-            {
-                for (int i = _subjects.Count - 1; i >= 0; i--)
-                {
-                    var subject = _subjects[i];
-                    var ctype = subject.Type;
-                    var cHandler = subject.Handler;
-                    if (ctype.IsAssignableFrom(typeof(TArgs)) && cHandler.Equals(handler))
-                    {
-                        _subjects.Remove(subject);
-                    }
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    /// 发布事件（为了更好二次开发利用事件管理器，所以将可访问性设置为公开）
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="args">发布的事件参数对象</param>
-    public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : TEventArgs
-    {
-        Task.Factory.StartNew(() =>
-        {
-            lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
-            {
-                try
-                {
-                    foreach (var subject in _subjects)
-                    {
-                        var subjectType = subject.Type;
-                        var subjectHandler = subject.Handler;
-                        if (subjectType.IsAssignableFrom(args.GetType()))
-                        {
-                            subjectHandler.DynamicInvoke(sender, args);
-                        }
-                    }
-                }
-                catch (Exception)
-                {
-                    // 异常处理，可以弄个异常日志事件，当然也可以不进行处理，直接抛出
-                }
-            }
-        });
-    }
-
-    /// <summary>
-    /// 事件是否已经被订阅
-    /// </summary>
-    /// <typeparam name="TArgs"></typeparam>
-    /// <returns></returns>
-    internal bool IsSubscribed<TArgs>() where TArgs : TEventArgs
-    {
-        foreach (var subject in _subjects)
-        {
-            if (subject.Type.IsAssignableFrom(typeof(TArgs)))
-            {
-                return true;
-            }
+            _myEvent.Publish(this, new RunEvent());
         }
-        return false;
+
+        public void Stop()
+        {
+            _myEvent.Publish(this, new StopEvent());
+        }
+
+        public void ReceiveMessages()
+        {
+            // 模拟接收到信息
+            _myEvent.Publish(this, new FriendMessageEvent("你好，世界！"));
+            _myEvent.Publish(this, new GroupMessageEvent("你好，世界！"));
+        }
     }
 
-    /// <summary>
-    /// 事件订阅信息
-    /// </summary>
-    private sealed class EventSubjectsInfo
+
+    public class RunEvent : EventArgs
     {
-        /// <summary>
-        /// 订阅事件参数类型
-        /// </summary>
-        public Type Type { get; }
+        public override string ToString()
+        {
+            return $"程序正在运行中！";
+        }
+    }
 
-        /// <summary>
-        /// 订阅处理程序
-        /// </summary>
-        public Delegate Handler { get; }
+    public class StopEvent : EventArgs
+    {
+        public override string ToString()
+        {
+            return $"程序已经被关闭！";
+        }
+    }
 
-        /// <summary>
-        /// 构造器
-        /// </summary>
-        /// <param name="type">订阅事件参数类型</param>
-        /// <param name="handler">订阅处理程序</param>
-        public EventSubjectsInfo(Type type, Delegate handler)
+
+    public class MessageEvent : EventArgs
+    {
+        public string Type { get; set; } = "未知";
+        public string Message { get; set; } = string.Empty;
+
+        public MessageEvent(string type, string message)
         {
             Type = type;
-            Handler = handler;
+            Message = message;
+        }
+        public override string ToString()
+        {
+            return $"接收到 {Type} 消息，内容：{Message}";
         }
     }
+
+
+    public class FriendMessageEvent : MessageEvent
+    {
+        public FriendMessageEvent(string message) : base("好友", message) { }
+    }
+
+    public class GroupMessageEvent : MessageEvent
+    {
+        public GroupMessageEvent(string message) : base("群", message) { }
+    }
 }
-
-
