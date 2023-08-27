@@ -98,9 +98,9 @@ public sealed class EventManager<TSender>
     /// <summary>
     /// 订阅事件
     /// </summary>
-    /// <typeparam name="TKonataEventArgs">事件参数类型</typeparam>
+    /// <typeparam name="TEventArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void Subject<TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
+    public void Subject<TEventArgs>(EventHandler<TSender, TEventArgs> handler) where TEventArgs : EventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -113,7 +113,7 @@ public sealed class EventManager<TSender>
                         return;
                     }
                 }
-                _subjects.Add(new EventSubjectsInfo(typeof(TKonataEventArgs), handler));
+                _subjects.Add(new EventSubjectsInfo(typeof(TEventArgs), handler));
             }
         });
     }
@@ -121,9 +121,9 @@ public sealed class EventManager<TSender>
     /// <summary>
     /// 取消订阅
     /// </summary>
-    /// <typeparam name="TKonataEventArgs">事件参数类型</typeparam>
+    /// <typeparam name="TEventArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    public void UnSubject<TKonataEventArgs>(EventHandler<TSender, TKonataEventArgs> handler) where TKonataEventArgs : EventArgs
+    public void UnSubject<TEventArgs>(EventHandler<TSender, TEventArgs> handler) where TEventArgs : EventArgs
     {
         Task.Factory.StartNew(() =>
         {
@@ -134,7 +134,7 @@ public sealed class EventManager<TSender>
                     var subject = _subjects[i];
                     var ctype = subject.Type;
                     var cHandler = subject.Handler;
-                    if (ctype.IsAssignableFrom(typeof(TKonataEventArgs)) && cHandler.Equals(handler))
+                    if (ctype.IsAssignableFrom(typeof(TEventArgs)) && cHandler.Equals(handler))
                     {
                         _subjects.Remove(subject);
                     }
