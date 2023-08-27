@@ -100,11 +100,14 @@ public sealed class Event<TSender, TEventArgs> : IEventSubscriber<TSender, TEven
     /// <returns></returns>
     public bool IsSubscribed<TArgs>() where TArgs : TEventArgs
     {
-        foreach (var subject in _subjects)
+        lock (_lock)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
         {
-            if (subject.Type.IsAssignableFrom(typeof(TArgs)))
+            foreach (var subject in _subjects)
             {
-                return true;
+                if (subject.Type.IsAssignableFrom(typeof(TArgs)))
+                {
+                    return true;
+                }
             }
         }
         return false;
