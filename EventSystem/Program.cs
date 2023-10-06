@@ -3,7 +3,7 @@
 var bot = new BotClient();
 // 订阅父类事件 - 全局基类
 var cancel1 = bot.MyEvent.Subject<EventArgs>((s, e) => { Console.WriteLine("[标识1] [操作者]：{0} [事件参数]：{1}", s, e); });
-// 订阅父类事件 - 消息基类（这是继承自EventArgs类，所以EventArgs订阅者也会输出该内容）
+// 订阅父类事件 - 消息基类（这是继承自EventArgs类，所以EventArgs的订阅者也会输出）
 var cancel2 = bot.MyEvent.Subject<MessageEvent>((s, e) => { Console.WriteLine("[标识2] [操作者]：{0} [事件参数]：{1}", s, e); });
 // 订阅子类事件
 var cancel3 = bot.MyEvent.Subject<RunEvent>((s, e) => { Console.WriteLine("[标识3] [操作者]：{0} [事件参数]：{1}", s, e); });
