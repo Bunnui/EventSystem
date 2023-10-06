@@ -1,52 +1,53 @@
 ﻿using EventSystem;
 
 var bot = new BotClient();
+// 订阅父类事件 - 全局基类
+var cancel1 = bot.MyEvent.Subject<EventArgs>((s, e) => { Console.WriteLine("[标识1] [操作者]：{0} [事件参数]：{1}", s, e); });
+// 订阅父类事件 - 消息基类（这是继承自EventArgs类，所以EventArgs订阅者也会输出该内容）
+var cancel2 = bot.MyEvent.Subject<MessageEvent>((s, e) => { Console.WriteLine("[标识2] [操作者]：{0} [事件参数]：{1}", s, e); });
+// 订阅子类事件
+var cancel3 = bot.MyEvent.Subject<RunEvent>((s, e) => { Console.WriteLine("[标识3] [操作者]：{0} [事件参数]：{1}", s, e); });
+var cancel4 = bot.MyEvent.Subject<StopEvent>((s, e) => { Console.WriteLine("[标识4] [操作者]：{0} [事件参数]：{1}", s, e); });
+var cancel5 = bot.MyEvent.Subject<FriendMessageEvent>((s, e) => { Console.WriteLine("[标识5] [操作者]：{0} [事件参数]：{1}", s, e); });
+var cancel6 = bot.MyEvent.Subject<GroupMessageEvent>((s, e) => { Console.WriteLine("[标识6] [操作者]：{0} [事件参数]：{1}", s, e); });
 
-// 订阅全部基于 EventArgs 的事件
-bot.MyEvent.Subject<EventArgs>((s, e) => { Console.WriteLine("[标识1] 操作者：{0} ，事件参数：{1}", s, e); });
-// 订阅程序运行程序
-bot.MyEvent.Subject<RunEvent>((s, e) => { Console.WriteLine("[标识2] 操作者：{0} ，事件参数：{1}", s, e); });
-bot.MyEvent.Subject<StopEvent>((s, e) => { Console.WriteLine("[标识3] 操作者：{0} ，事件参数：{1}", s, e); });
-// 注意：在订阅了MessageEventArgs，程序在发布FriendMessageEvent、GroupMessageEvent事件同样也会进行通知，
-// 因为它可以进行转换到该类型，这种应为抽象类比较合适，这样做可以统一处理基于该类的实现类
-bot.MyEvent.Subject<MessageEvent>((s, e) => { Console.WriteLine("[标识4] 操作者：{0} ，事件参数：{1}", s, e); });
-bot.MyEvent.Subject<FriendMessageEvent>((s, e) => { Console.WriteLine("[标识5] 操作者：{0} ，事件参数：{1}", s, e); });
-bot.MyEvent.Subject<GroupMessageEvent>((s, e) => { Console.WriteLine("[标识6] 操作者：{0} ，事件参数：{1}", s, e); });
-// 模拟运行程序
-bot.Run();
-// 模拟接收到消息
-bot.ReceiveMessages();
-// 模拟停止程序
-bot.Stop();
-// 阻塞一下，防止程序被关闭
+// 模拟触发事件
+{
+    bot.Run();
+    bot.ReceiveMessages();
+    bot.Stop();
+}
+
+// 取消事件测试
+{
+    Console.WriteLine();
+    Console.WriteLine("中途取消事件测试");
+
+    cancel1.Dispose();
+    cancel2.Dispose();
+
+    cancel3.Dispose();
+    cancel4.Dispose();
+    cancel5.Dispose();
+    cancel6.Dispose();
+
+    // 模拟触发事件
+    bot.Run();
+    bot.ReceiveMessages();
+    bot.Stop();
+}
+
 Console.ReadLine();
 
-// 预期结果：
-// 各种事件有2个，消息事件会有3个，因为有一个是由消息父类（MessageEvent）订阅者发出
-
-// 运行结果：
-// [标识1] 操作者：EventSystem.BotClient ，事件参数：程序正在运行中！
-// [标识2] 操作者：EventSystem.BotClient ，事件参数：程序正在运行中！
-// [标识1] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
-// [标识4] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
-// [标识5] 操作者：EventSystem.BotClient ，事件参数：接收到 好友 消息，内容：你好，世界！
-// [标识1] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
-// [标识4] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
-// [标识6] 操作者：EventSystem.BotClient ，事件参数：接收到 群 消息，内容：你好，世界！
-// [标识1] 操作者：EventSystem.BotClient ，事件参数：程序已经被关闭！
-// [标识3] 操作者：EventSystem.BotClient ，事件参数：程序已经被关闭！
 
 namespace EventSystem
 {
-
     public class BotClient
     {
-        // 这里只举例一个，可以自行定义其他事件
-
         /// <summary>
         /// 内部的对象，如果你不希望发布方法暴露出去，请使用接口进行暴露
         /// </summary>
-        internal readonly Event<BotClient, EventArgs> _myEvent = new();
+        internal readonly EventBus<BotClient, EventArgs> _myEvent = new();
 
         /// <summary>
         /// 这是面向用户的订阅事件接口
@@ -66,9 +67,13 @@ namespace EventSystem
 
         public void ReceiveMessages()
         {
-            // 模拟接收到信息
             _myEvent.Publish(this, new FriendMessageEvent("你好，世界！"));
             _myEvent.Publish(this, new GroupMessageEvent("你好，世界！"));
+        }
+
+        public override string ToString()
+        {
+            return "这是机器人客户端";
         }
     }
 
