@@ -12,11 +12,7 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
 {
     private readonly ConcurrentDictionary<Type, List<Delegate>> _subscribers = new();   // 线程安全字典
 
-    /// <summary>
-    /// 订阅事件
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="handler">事件处理程序</param>
+    /// <inheritdoc/>
     public IDisposable Subject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
         var type = typeof(TArgs);
@@ -28,11 +24,7 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
         return new EventHandlerDisposable<TArgs>(this, handler);
     }
 
-    /// <summary>
-    /// 取消订阅
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="handler">事件处理程序</param>
+    /// <inheritdoc/>
     public void UnSubject<TArgs>(EventHandler<TSender, TArgs> handler) where TArgs : TEventArgs
     {
         Type key = typeof(TArgs);
@@ -48,23 +40,13 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
         }
     }
 
-    /// <summary>
-    /// 订阅事件
-    /// </summary>
-    /// <param name="handler">事件处理程序</param>
+    /// <inheritdoc/>
     public IDisposable Subject(EventHandler<TSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
 
-    /// <summary>
-    /// 取消订阅
-    /// </summary>
-    /// <param name="handler">事件处理程序</param>
+    /// <inheritdoc/>
     public void UnSubject(EventHandler<TSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
 
-    /// <summary>
-    /// 发布事件
-    /// </summary>
-    /// <typeparam name="TArgs">事件参数类型</typeparam>
-    /// <param name="args">发布的事件参数对象</param>
+    /// <inheritdoc/>
     public void Publish<TArgs>(TSender sender, TArgs args) where TArgs : TEventArgs
     {
         foreach (var subscriber in _subscribers)
@@ -81,7 +63,6 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
             }
         }
     }
-
 
     /// <summary>
     /// 事件是否已经被订阅
