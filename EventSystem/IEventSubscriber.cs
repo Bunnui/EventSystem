@@ -32,14 +32,14 @@ public interface IEventSubscriber<TEventSender, TEventArgs>
     /// </summary>
     /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    IDisposable Subject(EventHandler<TEventSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
+    IDisposable Subject(EventHandler<TEventSender, TEventArgs> handler);
 
     /// <summary>
     /// 取消订阅
     /// </summary>
     /// <typeparam name="TArgs">事件参数类型</typeparam>
     /// <param name="handler">事件处理程序</param>
-    void UnSubject(EventHandler<TEventSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
+    void UnSubject(EventHandler<TEventSender, TEventArgs> handler);
 
     #endregion
 }

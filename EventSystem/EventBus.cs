@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Reflection;
 
 namespace EventSystem;
 
@@ -48,6 +49,18 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
     }
 
     /// <summary>
+    /// 订阅事件
+    /// </summary>
+    /// <param name="handler">事件处理程序</param>
+    public IDisposable Subject(EventHandler<TSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
+
+    /// <summary>
+    /// 取消订阅
+    /// </summary>
+    /// <param name="handler">事件处理程序</param>
+    public void UnSubject(EventHandler<TSender, TEventArgs> handler) => Subject<TEventArgs>(handler);
+
+    /// <summary>
     /// 发布事件
     /// </summary>
     /// <typeparam name="TArgs">事件参数类型</typeparam>
@@ -69,15 +82,41 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
         }
     }
 
+
+    /// <summary>
+    /// 事件是否已经被订阅
+    /// </summary>
+    /// <typeparam name="TArgs">事件参数类型</typeparam>
+    /// <returns></returns>
+    public bool IsSubscribed<TArgs>() where TArgs : TEventArgs
+    {
+        foreach (var subscriber in _subscribers)
+        {
+            var type = subscriber.Key;
+            if (type.IsAssignableFrom(typeof(TArgs)))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 释放资源
+    /// </summary>
     public void Dispose()
     {
         _subscribers.Clear();
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// 可释放的事件处理程序
+    /// </summary>
+    /// <typeparam name="TArgs"></typeparam>
     public sealed class EventHandlerDisposable<TArgs> : IDisposable where TArgs : TEventArgs
     {
-        private EventBus<TSender, TEventArgs> _eventBus;
+        private readonly EventBus<TSender, TEventArgs> _eventBus;
         private readonly EventHandler<TSender, TArgs> _handler;
 
         public EventHandlerDisposable(EventBus<TSender, TEventArgs> eventBus, EventHandler<TSender, TArgs> handler)
@@ -85,32 +124,11 @@ public sealed class EventBus<TSender, TEventArgs> : IDisposable, IEventSubscribe
             _eventBus = eventBus;
             _handler = handler;
         }
+
         public void Dispose()
         {
             _eventBus.UnSubject(_handler);
             GC.SuppressFinalize(this);
         }
     }
-
-
-    ///// <summary>
-    ///// 事件是否已经被订阅
-    ///// </summary>
-    ///// <typeparam name="TArgs">事件参数类型</typeparam>
-    ///// <returns></returns>
-    //public bool IsSubscribed<TArgs>() where TArgs : TEventArgs
-    //{
-    //    lock (this)    // 避免遍历过程中，原列表有订阅或取消订阅移除列表，导致遍历不安全，所以加锁
-    //    {
-    //        foreach (var subject in _subjects)
-    //        {
-    //            if (subject.Type.IsAssignableFrom(typeof(TArgs)))
-    //            {
-    //                return true;
-    //            }
-    //        }
-    //    }
-    //    return false;
-    //}
-
 }
